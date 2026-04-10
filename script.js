@@ -5320,101 +5320,117 @@ function renderGraficos(sS, sE, sH, sT, sC, sF, sFa, sI) {
     if (graficoIdadeChart) graficoIdadeChart.destroy();
     let lI = Object.keys(sI).sort();
     graficoIdadeChart = new Chart(document.getElementById('graficoIdade'), { type: 'bar', data: { labels: lI.map(l => l.substring(4)), datasets: [{ label: 'Masculino', data: lI.map(l => -sI[l].MASCULINO.internacoes), backgroundColor: '#3b82f6' }, { label: 'Feminino', data: lI.map(l => sI[l].FEMININO.internacoes), backgroundColor: '#d81b60' }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Pirâmide Etária' }, tooltip: { callbacks: { label: (c) => { let k = lI[c.dataIndex]; let s = c.dataset.label.toUpperCase(); return [s + ': ' + Math.abs(c.raw), 'Val: ' + sI[k][s].valor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})]; } } } }, scales: { x: { stacked: true, ticks: { callback: v => Math.abs(v) }, grid: { display: false } }, y: { stacked: true, grid: { display: false } } } } });
-}
-document.getElementById('exportPdfBtn').addEventListener('click', function() {
+}document.getElementById('exportPdfBtn').addEventListener('click', function() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('p', 'mm', 'a4');
-    const btn = this;
 
-    // 1. Obter dados que estão atualmente filtrados no seu sistema
-    // (Utilizando a mesma lógica que você já tem no seu filtrarDados)
+    // 1. CAPTURAR OS DADOS QUE ESTÃO EXATAMENTE NA TELA AGORA
+    // No seu código original, a função filtrarDados() é quem gera o resultado.
+    // Vamos repetir a lógica de filtro idêntica para garantir 100% de precisão.
     const fAno = document.getElementById('anoFilter').value;
     const fComp = document.getElementById('compFilter').value;
-    const fCnes = document.getElementById('cnesFilter').value;
     const fMunic = document.getElementById('municFilter').value.toLowerCase();
-    
-    const dadosParaRelatorio = dadosGlobais.filter(d => {
+    const fCnes = document.getElementById('cnesFilter').value;
+    const fFinanc = document.getElementById('financFilter').value;
+    const fFaec = document.getElementById('faecTpFilter').value;
+    const fLeito = document.getElementById('leitoFilter').value;
+    const fAtend = document.getElementById('tipoAtendFilter').value;
+    const fComplex = document.getElementById('complexFilter').value;
+    const fProc = document.getElementById('procFilter').value;
+
+    const dadosFiltradosParaPDF = dadosGlobais.filter(d => {
         const procFormatado = formatarProcRea(d.PROC_REA);
         return (fAno === 'all' || String(d.ANO_CMPT) === fAno) &&
                (fComp === 'all' || String(d.MES_CMPT) === fComp) &&
-               (fCnes === 'all' || String(d.CNES) === fCnes) &&
                (fMunic === '' || (mapaMunicipios[d.MUNIC_RES] || "").toLowerCase().includes(fMunic)) &&
-               (document.getElementById('procFilter').value === '' || procFormatado.includes(document.getElementById('procFilter').value));
+               (fCnes === 'all' || String(d.CNES) === fCnes) &&
+               (fFinanc === 'all' || String(d.FINANC) === fFinanc) &&
+               (fFaec === 'all' || String(d.FAEC_TP) === fFaec) &&
+               (fLeito === 'all' || String(d.ESPEC) === fLeito) &&
+               (fAtend === 'all' || String(d.TIPO_ATEND) === fAtend) &&
+               (fComplex === 'all' || String(d.COMPLEX) === fComplex) &&
+               (fProc === '' || procFormatado.includes(fProc));
     });
 
-    // 2. Cálculos para o Cabeçalho do Relatório
-    const totalAih = dadosParaRelatorio.length;
-    const valorTotal = dadosParaRelatorio.reduce((acc, curr) => acc + (curr.VAL_TOT || 0), 0);
-    const dataEmissao = new Date().toLocaleDateString('pt-BR');
+    // 2. CÁLCULO DOS TOTAIS (IDÊNTICO AOS SEUS KPIs)
+    const totalInternacoes = dadosFiltradosParaPDF.length;
+    const valorTotal = dadosFiltradosParaPDF.reduce((acc, curr) => acc + (curr.VAL_TOT || 0), 0);
+    const obitos = dadosFiltradosParaPDF.reduce((acc, curr) => acc + (curr.OBITO === 1 || curr.OBITO === "1" ? 1 : 0), 0);
+    const dataRelatorio = new Date().toLocaleString('pt-BR');
 
-    // 3. Estilização do Cabeçalho Profissional
-    doc.setFillColor(0, 86, 179); // O azul original do seu sistema
-    doc.rect(0, 0, 210, 40, 'F');
+    // 3. DESIGN DO CABEÇALHO PROFISSIONAL
+    doc.setFillColor(0, 86, 179); // Azul Royal do seu Header
+    doc.rect(0, 0, 210, 45, 'F');
     
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(22);
+    doc.setFontSize(24);
     doc.setFont("helvetica", "bold");
-    doc.text("Vintex - RELATÓRIO HOSPITALAR", 15, 20);
+    doc.text("MEGADATA BI", 15, 20);
     
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Emissão: ${dataEmissao} | Filtros Aplicados: Ano: ${fAno} / Mes: ${fComp}`, 15, 30);
-
-    // 4. Seção de Resumo (KPIs formatados)
-    doc.setTextColor(0, 0, 0);
     doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text("RESUMO DOS INDICADORES", 15, 55);
+    doc.text("Relatório Gerencial de Internações Hospitalares", 15, 30);
     
-    doc.setDrawColor(200, 200, 200);
-    doc.line(15, 58, 195, 58);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Extraído em: ${dataRelatorio}`, 15, 38);
+
+    // 4. QUADRO DE INDICADORES PRINCIPAIS (KPIs)
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("RESUMO DOS INDICADORES FILTRADOS", 15, 60);
+    doc.line(15, 62, 195, 62);
 
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
-    doc.text(`Total de Internações: ${totalAih.toLocaleString('pt-BR')}`, 20, 70);
-    doc.text(`Valor Total Faturado: ${valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 20, 80);
-    doc.text(`Média por AIH: ${(totalAih > 0 ? valorTotal / totalAih : 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 20, 90);
+    
+    // Coluna 1
+    doc.text(`Total de AIHs: ${totalInternacoes.toLocaleString('pt-BR')}`, 20, 75);
+    doc.text(`Valor Total: ${valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 20, 85);
+    
+    // Coluna 2
+    doc.text(`Total de Óbitos: ${obitos.toLocaleString('pt-BR')}`, 110, 75);
+    doc.text(`Média por AIH: ${(totalInternacoes > 0 ? valorTotal / totalInternacoes : 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 110, 85);
 
-    // 5. Tabela de Detalhamento por Hospital (Exemplo de lógica profissional)
+    // 5. TABELA DE DADOS (POR HOSPITAL)
     doc.setFont("helvetica", "bold");
-    doc.text("DETALHAMENTO POR UNIDADE HOSPITALAR", 15, 110);
-    
-    const hospitaisNoRelatorio = [...new Set(dadosParaRelatorio.map(d => d.CNES))];
-    let yPos = 120;
+    doc.text("DISTRIBUIÇÃO POR UNIDADE HOSPITALAR", 15, 105);
+    doc.line(15, 107, 195, 107);
 
+    let yPos = 115;
     doc.setFontSize(10);
-    doc.text("Hospital", 20, yPos);
-    doc.text("Qtd AIH", 130, yPos);
-    doc.text("Valor Total", 160, yPos);
+    doc.text("Unidade Hospitalar", 20, yPos);
+    doc.text("Qtd", 140, yPos);
+    doc.text("Valor Faturado", 160, yPos);
     
-    doc.line(15, yPos + 2, 195, yPos + 2);
-    yPos += 10;
+    yPos += 5;
     doc.setFont("helvetica", "normal");
 
-    hospitaisNoRelatorio.forEach(cnes => {
-        if(yPos > 270) { doc.addPage(); yPos = 20; } // Controle de quebra de página
-        
-        const dadosHosp = dadosParaRelatorio.filter(d => d.CNES === cnes);
-        const nomeHosp = mapaHospitais[cnes] || cnes;
-        const qtd = dadosHosp.length;
-        const vlr = dadosHosp.reduce((a, b) => a + (b.VAL_TOT || 0), 0);
+    // Agrupar dados por Hospital para a tabela
+    const resumoHospitais = {};
+    dadosFiltradosParaPDF.forEach(d => {
+        const nome = mapaHospitais[d.CNES] || d.CNES;
+        if (!resumoHospitais[nome]) resumoHospitais[nome] = { qtd: 0, valor: 0 };
+        resumoHospitais[nome].qtd++;
+        resumoHospitais[nome].valor += (d.VAL_TOT || 0);
+    });
 
-        doc.text(nomeHosp.substring(0, 50), 20, yPos);
-        doc.text(qtd.toString(), 130, yPos);
-        doc.text(vlr.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 160, yPos);
-        
+    Object.keys(resumoHospitais).forEach(hosp => {
+        if (yPos > 270) { doc.addPage(); yPos = 20; }
+        doc.text(String(hosp).substring(0, 55), 20, yPos);
+        doc.text(resumoHospitais[hosp].qtd.toString(), 140, yPos);
+        doc.text(resumoHospitais[hosp].valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 160, yPos);
         yPos += 8;
     });
 
-    // 6. Rodapé
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
+    // 6. RODAPÉ COM PAGINAÇÃO
+    const totalPaginas = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPaginas; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(150);
-        doc.text(`Página ${i} de ${pageCount} - MegaData Business Intelligence`, 105, 290, { align: 'center' });
+        doc.text(`Página ${i} de ${totalPaginas} | Relatório MegaData Business Intelligence`, 105, 290, { align: 'center' });
     }
 
-    // 7. Finalização
-    doc.save(`Relatorio_Profissional_${fAno}_${fComp}.pdf`);
+    doc.save(`Relatorio_MegaData_${fAno}_${fComp}.pdf`);
 });
