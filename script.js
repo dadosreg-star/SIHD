@@ -5320,117 +5320,125 @@ function renderGraficos(sS, sE, sH, sT, sC, sF, sFa, sI) {
     if (graficoIdadeChart) graficoIdadeChart.destroy();
     let lI = Object.keys(sI).sort();
     graficoIdadeChart = new Chart(document.getElementById('graficoIdade'), { type: 'bar', data: { labels: lI.map(l => l.substring(4)), datasets: [{ label: 'Masculino', data: lI.map(l => -sI[l].MASCULINO.internacoes), backgroundColor: '#3b82f6' }, { label: 'Feminino', data: lI.map(l => sI[l].FEMININO.internacoes), backgroundColor: '#d81b60' }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Pirâmide Etária' }, tooltip: { callbacks: { label: (c) => { let k = lI[c.dataIndex]; let s = c.dataset.label.toUpperCase(); return [s + ': ' + Math.abs(c.raw), 'Val: ' + sI[k][s].valor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})]; } } } }, scales: { x: { stacked: true, ticks: { callback: v => Math.abs(v) }, grid: { display: false } }, y: { stacked: true, grid: { display: false } } } } });
-}document.getElementById('exportPdfBtn').addEventListener('click', function() {
+}
+
+document.getElementById('exportPdfBtn').addEventListener('click', function() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('p', 'mm', 'a4');
 
-    // 1. CAPTURAR OS DADOS QUE ESTÃO EXATAMENTE NA TELA AGORA
-    // No seu código original, a função filtrarDados() é quem gera o resultado.
-    // Vamos repetir a lógica de filtro idêntica para garantir 100% de precisão.
-    const fAno = document.getElementById('anoFilter').value;
-    const fComp = document.getElementById('compFilter').value;
-    const fMunic = document.getElementById('municFilter').value.toLowerCase();
-    const fCnes = document.getElementById('cnesFilter').value;
-    const fFinanc = document.getElementById('financFilter').value;
-    const fFaec = document.getElementById('faecTpFilter').value;
-    const fLeito = document.getElementById('leitoFilter').value;
-    const fAtend = document.getElementById('tipoAtendFilter').value;
-    const fComplex = document.getElementById('complexFilter').value;
-    const fProc = document.getElementById('procFilter').value;
+    // 1. CAPTURA EXATA DOS FILTROS DA TELA
+    const filtros = {
+        ano: document.getElementById('anoFilter').value,
+        comp: document.getElementById('compFilter').value,
+        cnes: document.getElementById('cnesFilter').value,
+        financ: document.getElementById('financFilter').value,
+        faecTp: document.getElementById('faecTpFilter').value,
+        leito: document.getElementById('leitoFilter').value,
+        atend: document.getElementById('tipoAtendFilter').value,
+        complex: document.getElementById('complexFilter').value,
+        munic: document.getElementById('municFilter').value.trim(),
+        proc: document.getElementById('procFilter').value.trim()
+    };
 
-    const dadosFiltradosParaPDF = dadosGlobais.filter(d => {
+    // 2. FILTRAGEM ESPELHADA (IGUAL À FUNÇÃO filtrarDados() DO SEU SCRIPT)
+    const dadosRelatorio = dadosGlobais.filter(d => {
         const procFormatado = formatarProcRea(d.PROC_REA);
-        return (fAno === 'all' || String(d.ANO_CMPT) === fAno) &&
-               (fComp === 'all' || String(d.MES_CMPT) === fComp) &&
-               (fMunic === '' || (mapaMunicipios[d.MUNIC_RES] || "").toLowerCase().includes(fMunic)) &&
-               (fCnes === 'all' || String(d.CNES) === fCnes) &&
-               (fFinanc === 'all' || String(d.FINANC) === fFinanc) &&
-               (fFaec === 'all' || String(d.FAEC_TP) === fFaec) &&
-               (fLeito === 'all' || String(d.ESPEC) === fLeito) &&
-               (fAtend === 'all' || String(d.TIPO_ATEND) === fAtend) &&
-               (fComplex === 'all' || String(d.COMPLEX) === fComplex) &&
-               (fProc === '' || procFormatado.includes(fProc));
+        return (filtros.ano === 'all' || String(d.ANO_CMPT) === filtros.ano) &&
+               (filtros.comp === 'all' || String(d.MES_CMPT) === filtros.comp) &&
+               (filtros.cnes === 'all' || String(d.CNES) === filtros.cnes) &&
+               (filtros.financ === 'all' || String(d.FINANC) === filtros.financ) &&
+               (filtros.faecTp === 'all' || String(d.FAEC_TP) === filtros.faecTp) &&
+               (filtros.leito === 'all' || String(d.ESPEC) === filtros.leito) &&
+               (filtros.atend === 'all' || String(d.TIPO_ATEND) === filtros.atend) &&
+               (filtros.complex === 'all' || String(d.COMPLEX) === filtros.complex) &&
+               (filtros.munic === '' || (mapaMunicipios[d.MUNIC_RES] || "").toLowerCase().includes(filtros.munic.toLowerCase())) &&
+               (filtros.proc === '' || procFormatado.includes(filtros.proc));
     });
 
-    // 2. CÁLCULO DOS TOTAIS (IDÊNTICO AOS SEUS KPIs)
-    const totalInternacoes = dadosFiltradosParaPDF.length;
-    const valorTotal = dadosFiltradosParaPDF.reduce((acc, curr) => acc + (curr.VAL_TOT || 0), 0);
-    const obitos = dadosFiltradosParaPDF.reduce((acc, curr) => acc + (curr.OBITO === 1 || curr.OBITO === "1" ? 1 : 0), 0);
-    const dataRelatorio = new Date().toLocaleString('pt-BR');
+    // 3. CÁLCULO DE TOTAIS E SEGREGAÇÃO (MAC vs FAEC)
+    const totalInternacoes = dadosRelatorio.length;
+    const valorTotal = dadosRelatorio.reduce((acc, curr) => acc + (curr.VAL_TOT || 0), 0);
+    
+    // Segregação específica conforme sua solicitação
+    const valorMAC = dadosRelatorio.filter(d => String(d.FINANC) === "6" || String(d.FINANC) === "06")
+                                   .reduce((acc, curr) => acc + (curr.VAL_TOT || 0), 0);
+    const valorFAEC = dadosRelatorio.filter(d => String(d.FINANC) === "4" || String(d.FINANC) === "04")
+                                    .reduce((acc, curr) => acc + (curr.VAL_TOT || 0), 0);
 
-    // 3. DESIGN DO CABEÇALHO PROFISSIONAL
-    doc.setFillColor(0, 86, 179); // Azul Royal do seu Header
+    // 4. CABEÇALHO E FILTROS NO RELATÓRIO
+    doc.setFillColor(0, 86, 179);
     doc.rect(0, 0, 210, 45, 'F');
-    
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
     doc.setFont("helvetica", "bold");
-    doc.text("MEGADATA BI", 15, 20);
-    
-    doc.setFontSize(14);
-    doc.text("Relatório Gerencial de Internações Hospitalares", 15, 30);
+    doc.setFontSize(20);
+    doc.text("MEGADATA BI - RELATÓRIO DE GESTÃO", 15, 18);
     
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.text(`Extraído em: ${dataRelatorio}`, 15, 38);
+    let txtFiltros = `Filtros: Ano: ${filtros.ano} | Mês: ${filtros.comp} | Financiamento: ${filtros.financ === 'all' ? 'TODOS' : (mapaFinanc[filtros.financ] || filtros.financ)}`;
+    doc.text(txtFiltros, 15, 28);
+    if (filtros.cnes !== 'all') doc.text(`Unidade: ${mapaHospitais[filtros.cnes] || filtros.cnes}`, 15, 33);
+    if (filtros.munic !== '') doc.text(`Município: ${filtros.munic}`, 15, 38);
 
-    // 4. QUADRO DE INDICADORES PRINCIPAIS (KPIs)
+    // 5. BLOCO DE KPIs (IGUAL À TELA)
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text("RESUMO DOS INDICADORES FILTRADOS", 15, 60);
+    doc.text("RESUMO FINANCEIRO E OPERACIONAL", 15, 60);
     doc.line(15, 62, 195, 62);
 
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    // Linha 1
+    doc.setFont("helvetica", "bold"); doc.text("Total Internações:", 15, 75); 
+    doc.setFont("helvetica", "normal"); doc.text(`${totalInternacoes.toLocaleString('pt-BR')}`, 50, 75);
     
-    // Coluna 1
-    doc.text(`Total de AIHs: ${totalInternacoes.toLocaleString('pt-BR')}`, 20, 75);
-    doc.text(`Valor Total: ${valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 20, 85);
-    
-    // Coluna 2
-    doc.text(`Total de Óbitos: ${obitos.toLocaleString('pt-BR')}`, 110, 75);
-    doc.text(`Média por AIH: ${(totalInternacoes > 0 ? valorTotal / totalInternacoes : 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 110, 85);
+    doc.setFont("helvetica", "bold"); doc.text("Valor Total:", 110, 75); 
+    doc.setFont("helvetica", "normal"); doc.text(`${valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 140, 75);
 
-    // 5. TABELA DE DADOS (POR HOSPITAL)
+    // Linha 2 (Segregação Financeira solicitada)
+    doc.setFont("helvetica", "bold"); doc.text("Valor MAC (06):", 15, 85); 
+    doc.setFont("helvetica", "normal"); doc.text(`${valorMAC.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 50, 85);
+
+    doc.setFont("helvetica", "bold"); doc.text("Valor FAEC (04):", 110, 85); 
+    doc.setFont("helvetica", "normal"); doc.text(`${valorFAEC.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 140, 85);
+
+    // 6. TABELA DE DETALHAMENTO POR HOSPITAL
     doc.setFont("helvetica", "bold");
-    doc.text("DISTRIBUIÇÃO POR UNIDADE HOSPITALAR", 15, 105);
+    doc.text("DISTRIBUIÇÃO POR UNIDADE", 15, 105);
     doc.line(15, 107, 195, 107);
 
     let yPos = 115;
-    doc.setFontSize(10);
-    doc.text("Unidade Hospitalar", 20, yPos);
-    doc.text("Qtd", 140, yPos);
-    doc.text("Valor Faturado", 160, yPos);
-    
-    yPos += 5;
-    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text("Unidade Hospitalar", 15, yPos);
+    doc.text("AIHs", 130, yPos);
+    doc.text("Valor MAC", 150, yPos);
+    doc.text("Valor FAEC", 175, yPos);
+    yPos += 3;
+    doc.line(15, yPos, 195, yPos);
+    yPos += 7;
 
-    // Agrupar dados por Hospital para a tabela
-    const resumoHospitais = {};
-    dadosFiltradosParaPDF.forEach(d => {
+    const resumoHosp = {};
+    dadosRelatorio.forEach(d => {
         const nome = mapaHospitais[d.CNES] || d.CNES;
-        if (!resumoHospitais[nome]) resumoHospitais[nome] = { qtd: 0, valor: 0 };
-        resumoHospitais[nome].qtd++;
-        resumoHospitais[nome].valor += (d.VAL_TOT || 0);
+        if (!resumoHosp[nome]) resumoHosp[nome] = { qtd: 0, mac: 0, faec: 0 };
+        resumoHosp[nome].qtd++;
+        if (String(d.FINANC) === "6" || String(d.FINANC) === "06") resumoHosp[nome].mac += (d.VAL_TOT || 0);
+        if (String(d.FINANC) === "4" || String(d.FINANC) === "04") resumoHosp[nome].faec += (d.VAL_TOT || 0);
     });
 
-    Object.keys(resumoHospitais).forEach(hosp => {
-        if (yPos > 270) { doc.addPage(); yPos = 20; }
-        doc.text(String(hosp).substring(0, 55), 20, yPos);
-        doc.text(resumoHospitais[hosp].qtd.toString(), 140, yPos);
-        doc.text(resumoHospitais[hosp].valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 160, yPos);
-        yPos += 8;
+    doc.setFont("helvetica", "normal");
+    Object.keys(resumoHosp).forEach(h => {
+        if (yPos > 275) { doc.addPage(); yPos = 20; }
+        doc.text(String(h).substring(0, 50), 15, yPos);
+        doc.text(resumoHosp[h].qtd.toString(), 130, yPos);
+        doc.text(resumoHosp[h].mac.toLocaleString('pt-BR', { minimumFractionDigits: 2 }), 150, yPos);
+        doc.text(resumoHosp[h].faec.toLocaleString('pt-BR', { minimumFractionDigits: 2 }), 175, yPos);
+        yPos += 7;
     });
 
-    // 6. RODAPÉ COM PAGINAÇÃO
-    const totalPaginas = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= totalPaginas; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(150);
-        doc.text(`Página ${i} de ${totalPaginas} | Relatório MegaData Business Intelligence`, 105, 290, { align: 'center' });
-    }
+    // 7. RODAPÉ
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.text(`Relatório gerado em ${new Date().toLocaleString()} | MegaData System`, 105, 290, { align: 'center' });
 
-    doc.save(`Relatorio_MegaData_${fAno}_${fComp}.pdf`);
+    doc.save(`Relatorio_Rigoroso_${filtros.ano}_${filtros.comp}.pdf`);
 });
