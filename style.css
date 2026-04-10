@@ -1,0 +1,238 @@
+:root {
+    --primary-color: #3b82f6; /* Azul claro para elementos de destaque nos gráficos e números */
+    --header-blue: #0056b3;  /* O azul original solicitado para o cabeçalho */
+    --secondary-color: #121212; /* Fundo principal escuro da página */
+    --text-color: greenyellow; /* Cor do texto geral clara para contrastar com fundo escuro */
+    --card-bg: #1e1e1e; /* Fundo dos cartões de KPI e gráficos ligeiramente mais claro que o fundo */
+    --border-color: #333333; /* Cor das bordas para delimitar os cartões no modo escuro */
+    --kpi-title-color: #a0a0a0; /* Cor dos títulos dos indicadores */
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    padding: 20px;
+}
+
+header {
+    background-color: var(--header-red); /* Retorno ao azul original */
+    color: greenyellow; /* Texto branco para garantir bom contraste no cabeçalho azul */
+    padding: 25px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    border: none;
+}
+
+header h1 {
+    font-size: 2.2rem;
+    margin-bottom: 5px;
+}
+
+header p {
+    color: greenyellow(255, 255, 255, 0.8);
+}
+
+.upload-section {
+    background-color: var(--card-bg);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap; /* Garante que não quebre no celular */
+}
+
+input[type="file"] {
+    padding: 10px;
+    border: 1px dashed var(--primary-color);
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    max-width: 100%; /* Ajuste mobile */
+}
+
+/* Novo Layout: Flex Container para dividir Sidebar e Conteúdo */
+.dashboard-layout {
+    display: flex;
+    gap: 20px;
+    align-items: stretch; /* Faz com que a sidebar acompanhe 100% da altura do conteúdo */
+    flex-wrap: nowrap;
+}
+
+/* Barra Lateral (Filtros Verticais) */
+.sidebar-filters {
+    flex: 0 0 max-content; /* Ocupa a menor largura possível para o conteúdo */
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease; /* Transição suave caso se modifique larguras */
+}
+
+.filters-section {
+    display: flex;
+    flex-direction: column; /* Transforma filtros em lista vertical */
+    gap: 15px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.filter-group select,
+.filter-group input[type="text"] {
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    min-width: 200px;
+    width: 100%; /* Garante preenchimento no mobile */
+}
+
+/* Botão de Toggle da Sidebar */
+.toggle-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+    width: fit-content;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: background-color 0.2s;
+}
+
+.toggle-btn:hover {
+    background-color: #2563eb; /* Azul levemente mais escuro no hover */
+}
+
+/* Conteúdo Direito do Dashboard */
+.dashboard-content {
+    flex: 1; /* Ocupa todo o resto do ecrã */
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* Previne overflow no flex em ecrãs pequenos */
+}
+
+/* Grelha de KPIs Adaptável - Forçada para ter exatamente 2 linhas (4 cartões na 1ª, 3 na 2ª) em ecrãs largos */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 4 colunas força a quebra na 2ª linha */
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.kpi-card {
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    border: 1px solid var(--border-color);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.kpi-card h3 {
+    font-size: 0.9rem;
+    color: var(--kpi-title-color);
+    margin-bottom: 10px;
+}
+
+.kpi-card p {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    word-break: break-word; /* Previne quebra de layout com números gigantes */
+}
+
+/* Grelha de Gráficos Adaptável */
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+.chart-container {
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    height: 350px;
+    position: relative;
+    width: 100%;
+}
+
+/* MEDIA QUERIES - Adaptação para Celulares e Tablets */
+
+@media (max-width: 1024px) {
+    .dashboard-layout {
+        flex-direction: column; /* Coloca os filtros em cima do dashboard nestes ecrãs */
+    }
+    .sidebar-filters {
+        width: 100%;
+        flex: auto;
+    }
+    .filters-section {
+        flex-direction: row; /* Coloca os filtros lado a lado se houver espaço */
+        flex-wrap: wrap;
+    }
+    .filter-group {
+        flex: 1 1 200px; /* Faz os inputs dividirem o espaço */
+    }
+    /* Em tablets, mostra 3 cartões por linha */
+    .kpi-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Celulares (Mobiles) */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    .charts-grid {
+        grid-template-columns: 1fr; /* Coloca 1 gráfico por linha no celular */
+    }
+    /* Em celulares, mostra 2 cartões por linha */
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .chart-container {
+        height: 300px; /* Gráficos ligeiramente mais curtos no telemóvel */
+    }
+    .filters-section {
+        flex-direction: column; /* No telemóvel volta a ficar uma coluna de filtros */
+    }
+}
+
+/* Celulares Muito Pequenos */
+@media (max-width: 480px) {
+    /* Em telas muito pequenas, 1 cartão por linha */
+    .kpi-grid {
+        grid-template-columns: 1fr;
+    }
+    header h1 {
+        font-size: 1.8rem;
+    }
+}

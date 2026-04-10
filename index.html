@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vintex - Painel de Informações Hospitalares</title>
+    
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+    <div id="loginScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #1a1a1a 0%, #000000 100%); display: flex; justify-content: center; align-items: center; z-index: 9999;">
+        <div style="background: #1e1e1e; padding: 40px; border-radius: 12px; border: 1px solid #333; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.7);">
+            <div style="margin-bottom: 30px;">
+                <h2 style="color: #3b82f6; margin-bottom: 10px; font-size: 2rem; letter-spacing: 1px;">MegaData</h2>
+                <p style="color: #a0a0a0; font-size: 0.9rem;">Acesso Restrito ao Painel</p>
+            </div>
+            
+            <div style="margin-bottom: 20px; text-align: left;">
+                <label style="display: block; color: #a0a0a0; margin-bottom: 8px; font-size: 0.85rem; font-weight: bold; text-transform: uppercase;">Usuário</label>
+                <input type="text" id="userInput" placeholder="Digite seu usuário" style="width: 100%; padding: 12px 15px; border-radius: 6px; border: 1px solid #444; background: #121212; color: greenyellow; outline: none; transition: border-color 0.3s; box-sizing: border-box;">
+            </div>
+            
+            <div style="margin-bottom: 30px; text-align: left;">
+                <label style="display: block; color: #a0a0a0; margin-bottom: 8px; font-size: 0.85rem; font-weight: bold; text-transform: uppercase;">Senha</label>
+                <input type="password" id="passInput" placeholder="Digite sua senha" style="width: 100%; padding: 12px 15px; border-radius: 6px; border: 1px solid #444; background: #121212; color: greenyellow; outline: none; transition: border-color 0.3s; box-sizing: border-box;">
+            </div>
+            
+            <button id="loginBtn" style="width: 100%; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.3s; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);">
+                Entrar no Sistema
+            </button>
+            
+            <p id="loginError" style="color: #ff4d4d; margin-top: 20px; display: none; font-size: 0.85rem; background: rgba(255, 77, 77, 0.1); padding: 10px; border-radius: 4px;">Usuário ou senha incorretos!</p>
+        </div>
+    </div>
+
+    <header>
+        <h1>Vintex</h1>
+        <p>Painel de Gestão e Informações Hospitalares (SIH)</p>
+    </header>
+
+    <main>
+        <div class="upload-section">
+            <label for="csvFileInput"><strong>Carregar base de dados (.csv):</strong></label>
+            <input type="file" id="csvFileInput" accept=".csv" aria-label="Fazer upload do ficheiro CSV">
+        </div>
+
+        <div id="dashboardLayout" class="dashboard-layout" style="display: none;">
+            
+            <aside class="sidebar-filters" id="sidebarFilters">
+                <h2 style="color: var(--text-color); margin-bottom: 15px; font-size: 1.5rem; text-align: center;">Filtros</h2>
+                <div class="filters-section" id="filtersSection">
+                    <div class="filter-group">
+                        <label for="anoFilter"><strong>Ano:</strong></label>
+                        <select id="anoFilter" aria-label="Filtrar por Ano">
+                            <option value="all">Todos</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="compFilter"><strong>Competência:</strong></label>
+                        <select id="compFilter" aria-label="Filtrar por Competência">
+                            <option value="all">Todos</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="municFilter"><strong>Município Resd.:</strong></label>
+                        <input type="text" id="municFilter" list="municipiosList" aria-label="Filtrar por Município" placeholder="Digite o município...">
+                        <datalist id="municipiosList"></datalist>
+                    </div>
+                    <div class="filter-group">
+                        <label for="cnesFilter"><strong>Hospital:</strong></label>
+                        <select id="cnesFilter" aria-label="Filtrar por Hospital">
+                            <option value="all">Todos</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="financFilter"><strong>Financiamento:</strong></label>
+                        <select id="financFilter" aria-label="Filtrar por Financiamento">
+                            <option value="all">Todos</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="faecTpFilter"><strong>Subtipo FAEC:</strong></label>
+                        <select id="faecTpFilter" aria-label="Filtrar por Subtipo FAEC">
+                            <option value="all">Todos</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="leitoFilter"><strong>Leitos:</strong></label>
+                        <select id="leitoFilter" aria-label="Filtrar por Leitos">
+                            <option value="all">Todos</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="tipoAtendFilter"><strong>Tipo Atendimento:</strong></label>
+                        <select id="tipoAtendFilter" aria-label="Filtrar por Tipo de Atendimento">
+                            <option value="all">Todos</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="complexFilter"><strong>Complexidade:</strong></label>
+                        <select id="complexFilter" aria-label="Filtrar por Complexidade">
+                            <option value="all">Todos</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="procFilter"><strong>Procedimento Realizado:</strong></label>
+                        <input type="text" id="procFilter" list="procList" aria-label="Buscar por Código do Procedimento" placeholder="Digite o código (ex: 04...)">
+                        <datalist id="procList"></datalist>
+                    </div>
+                </div>
+            </aside>
+
+            <div class="dashboard-content">
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button id="toggleFiltersBtn" class="toggle-btn" aria-label="Ocultar ou Mostrar Filtros" style="margin-bottom: 0;">☰ Ocultar/Mostrar Filtros</button>
+                    <button id="exportPdfBtn" class="toggle-btn" style="margin-bottom: 0; background-color: #27ae60;">📥 Exportar PDF</button>
+                </div>
+
+                <div class="kpi-grid" id="kpiSection">
+                    <div class="kpi-card" tabindex="0" aria-label="Total de Internações">
+                        <h3>Total de Internações</h3>
+                        <p id="kpiTotal">0</p>
+                    </div>
+                    <div class="kpi-card" tabindex="0" aria-label="Valor Total Aprovado">
+                        <h3>Valor Total (R$)</h3>
+                        <p id="kpiValor">0,00</p>
+                    </div>
+                    <div class="kpi-card" tabindex="0" aria-label="Valor Total UTI">
+                        <h3>Valor Total UTI (R$)</h3>
+                        <p id="kpiUti">0,00</p>
+                    </div>
+                    <div class="kpi-card" tabindex="0" aria-label="Valor Total Internação">
+                        <h3>Valor Total Internação (R$)</h3>
+                        <p id="kpiInternacao">0,00</p>
+                    </div>
+                    <div class="kpi-card" tabindex="0" aria-label="Média da AIH">
+                        <h3>Média da AIH (R$)</h3>
+                        <p id="kpiMediaAih">0,00</p>
+                    </div>
+                    <div class="kpi-card" tabindex="0" aria-label="Média de Permanência">
+                        <h3>Média de Permanência (Dias)</h3>
+                        <p id="kpiDias">0</p>
+                    </div>
+                    <div class="kpi-card" tabindex="0" aria-label="Total de Óbitos">
+                        <h3>Total de Óbitos</h3>
+                        <p id="kpiObitos">0</p>
+                    </div>
+                </div>
+
+                <div class="charts-grid" id="chartsSectionTop">
+                    <div class="chart-container">
+                        <canvas id="graficoSexo" aria-label="Gráfico de rosca mostrando internações por sexo" role="img"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="graficoEspec" aria-label="Gráfico de barras mostrando internações por leitos" role="img"></canvas>
+                    </div>
+                </div>
+
+                <div class="charts-grid" id="chartsSectionBottom" style="margin-top: 20px;">
+                    <div class="chart-container">
+                        <canvas id="graficoTipoAtend" aria-label="Gráfico de rosca mostrando tipo de atendimento" role="img"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="graficoHospital" aria-label="Gráfico de barras mostrando internações por hospital" role="img"></canvas>
+                    </div>
+                </div>
+
+                <div class="charts-grid" id="chartsSectionBottom2" style="margin-top: 20px;">
+                    <div class="chart-container">
+                        <canvas id="graficoComplexidade" aria-label="Gráfico de rosca mostrando internações por complexidade" role="img"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="graficoFinanciamento" aria-label="Gráfico de rosca mostrando internações por financiamento" role="img"></canvas>
+                    </div>
+                </div>
+
+                <div class="charts-grid" id="chartsSectionBottom3" style="margin-top: 20px;">
+                    <div class="chart-container">
+                        <canvas id="graficoFaecTp" aria-label="Gráfico de barras mostrando internações por Tipo de FAEC" role="img"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="graficoIdade" aria-label="Gráfico de pirâmide mostrando internações por idade e sexo" role="img"></canvas>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
